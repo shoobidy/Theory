@@ -19,10 +19,12 @@ class Container implements ContainerInterface
      * Constructor
      *
      * @param CacheInterface - instance of CacheInterface
+     * @param array $rules - an array of rules used to configure objects
      */
-    public function __construct(CacheInterface $cache)
+    public function __construct(CacheInterface $cache, array $rules = [])
     {
         $this->cache = $cache;
+        $this->config = $rules;
     }
     
     /**
@@ -31,18 +33,18 @@ class Container implements ContainerInterface
      * @param string $id - class/interface name
      * @param array $config - configuration
      */
-    public function get(string $id, array $config = [])
+    public function get(string $id, array $rules = [])
     {
         // if a shared instance exists
         if (isset($this->shared[$id])) {
             // check if the shared object feature was overwritten
-            if (!isset($config['share']) || $config['share'] === true) {
+            if (!isset($rules['share']) || $rules['share'] === true) {
                 return $this->shared[$id];
             }
         }
         
         // create new instance
-        return $this->create($id, $config);
+        return $this->create($id, $rules);
     }
     
     /**
@@ -51,7 +53,7 @@ class Container implements ContainerInterface
      * @param type $id - class/interface name
      * @param array $config - configuration
      */
-    public function create($id, array $config = [])
+    public function create($id, array $rules = [])
     {
         // if there's no cached data
         if (!$this->cache->has($id)) {
@@ -61,7 +63,7 @@ class Container implements ContainerInterface
         $cache = $this->cache->get($id);
         
         // get configuration
-        $c = $this->getConfig($id, $cache['parent'], $config);
+        $c = $this->getConfig($id, $cache['parent'], $rules);
         
         // if a classname was configured
         if (isset($c['class'])) return $this->get($c['class']);
@@ -77,33 +79,33 @@ class Container implements ContainerInterface
      * Add a configuration for a class/interface
      * 
      * @param string $id - name of class/interface
-     * @param array $config - configuration
+     * @param array $rule - configuration
      */
-    public function config(string $id, array $config)
+    public function addRule(string $id, array $rule)
     {
-        $this->config[$id] = $config;
+        $this->config[$id] = $rule;
     }
     
     /**
      * Set the config property
      * 
-     * @param array $config
+     * @param array $rules
      * 
      * NOTE: this replaces the old $config value with the new one
      */
-    public function set(array $config)
+    public function setRules(array $rules)
     {
-        $this->config = $config;
+        $this->config = $rules;
     }
     
     /**
      * Merge the current config property with the $config value
      * 
-     * @param array $config
+     * @param array $rules
      */
-    public function merge(array $config)
+    public function addRules(array $rules)
     {
-        $this->config = array_merge($this->config, $config);
+        $this->config = array_merge($this->config, $rules);
     }
     
     /**

@@ -14,7 +14,7 @@ class Autoloader
     public function __construct(array $registry, string $root = '')
     {
         $this->registry = $registry;
-        $this->setDirectory($root);
+        $this->setRoot($root);
         $this->register();
     }
     
@@ -26,7 +26,7 @@ class Autoloader
      * 
      * NOTE: $path should be relative to the provided root path
      */
-    public function set(string $namespace, string $path)
+    public function addNamespace(string $namespace, string $path)
     {
         $this->registry[$namespace] = $path;
     }
@@ -36,7 +36,7 @@ class Autoloader
      * 
      * @param array $registry - [$namespace => $path/to/classes]
      */
-    public function merge(array $registry)
+    public function addRegistry(array $registry)
     {
         $this->registry = array_merge($this->registry, $registry);
     }
@@ -48,9 +48,9 @@ class Autoloader
      *
      * NOTE: disable by passing an empty string as an argument ''
      */
-    public function setDirectory(string $dir)
+    public function setRoot(string $dir)
     {
-        if ($dir === '') return $this->directory = '';
+        if ($dir === '') return $this->root = '';
 
         $this->root = rtrim($dir, '/\\') . '/';
     }
@@ -84,8 +84,8 @@ class Autoloader
             $key = implode('\\', $parts);
 
             if (!isset($this->registry[$key])) {
-                    $class = array_pop($parts) . '/' . $class;
-                    continue;
+                $class = array_pop($parts) . '/' . $class;
+                continue;
             }
 
             $file = $this->root . rtrim($this->registry[$key], '/\\') . '/' . $class . '.php';

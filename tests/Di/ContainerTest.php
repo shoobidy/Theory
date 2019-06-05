@@ -16,14 +16,14 @@ use Theory\Tests\Di\TestObjects\ChildObject;
 
 class ContainerTest extends TestCase
 {
-    public function getContainer($config = [])
+    public function getContainer()
     {
-        return new Container($config, new ArrayCache(__DIR__ . '/cache.php'));
+        return new Container(new ArrayCache(__DIR__ . '/cache.php'));
     }
 
     public function testCreateObject()
     {
-        $container = new Container([], new ArrayCache(__DIR__ . '/cache.php'));
+        $container = $this->getContainer();
         $this->assertEquals(new Obj, $container->create(Obj::class));
     }
     
@@ -54,10 +54,10 @@ class ContainerTest extends TestCase
 
     public function testReplaceInterface()
     {
-        $container = $this->getContainer([
-            AnInterface::class => [
-                'class' => ImplementsInterfaceOne::class
-            ]
+        $container = $this->getContainer();
+        
+        $container->addRule(AnInterface::class, [
+            'class' => ImplementsInterfaceOne::class
         ]);
 
         $this->assertEquals(
@@ -70,7 +70,9 @@ class ContainerTest extends TestCase
     // general configuration
     public function testReplaceInterfacePriority()
     {
-        $container = $this->getContainer([
+        $container = $this->getContainer();
+        
+        $container->addRules([
             // general config (applies to any instance of AnInterface)
             AnInterface::class => [
                 'class' => ImplementsInterfaceOne::class
@@ -93,12 +95,12 @@ class ContainerTest extends TestCase
     // Test autowiring/calling methods
     public function testCallMethod()
     {
-        $container = $this->getContainer([
-            Obj::class => [
+        $container = $this->getContainer();
+        
+        $container->addRule(Obj::class, [
                 'call' => [
                     'set' => ['value' => 'test']
                 ]
-            ]
         ]);
 
         $expected = new Obj;
@@ -109,12 +111,12 @@ class ContainerTest extends TestCase
 
     public function testCallParentMethod()
     {
-        $container = $this->getContainer([
-            Obj::class => [
+        $container = $this->getContainer();
+        
+        $container->addRule(Obj::class, [
                 'call' => [
                     'set' => ['value' => 'test']
                 ]
-            ]
         ]);
 
         $expected = new ChildObject;
