@@ -1,0 +1,7 @@
+<phpunit bootstrap="/www/apps/theory/lib/theory/tests/autoload.php">
+<testsuites>
+  <testsuite name="Theory Run All Tests">
+    <directory>/www/apps/theory/lib/theory/tests/Di</directory>
+  </testsuite>
+</testsuites>
+</phpunit>
