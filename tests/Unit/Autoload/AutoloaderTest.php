@@ -1,67 +1,70 @@
-<?php namespace Test\Unit\Autoload;
+<?php namespace Theory\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Test\Unit\Autoload\Fixture\TestClass;
 use Theory\Autoload\Autoloader;
 
-include '../../../src/Autoload/Autoloader.php';
+use Theory\A;
+use Theory\Tests\LongerNamespace;
+
+include_once ROOT . '/src/Autoload/Autoloader.php';
 
 /**
  * @runTestsInSeparateProcesses
  */
 class AutoloaderTest extends TestCase
 {
-    public function testSingleNamespaceId()
+    public function test_load_includes_file_and_returns_true_on_success()
     {
-        $autoloader = new Autoloader(['Test' => dirname(dirname(__DIR__))]);
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Theory', __DIR__ . '/Fixture');
 
-        $autoloader->load(TestClass::class);
-
-        $this->assertTrue(class_exists(TestClass::class, false));
+        $this->assertTrue($autoloader->load(A::class));
+        $this->assertTrue(class_exists(A::class, false));
     }
 
-    public function testCompoundNamespaceId()
+    public function test_load_returns_false_when_file_not_found()
     {
-        $autoloader = new Autoloader(['Test/Unit' => dirname(dirname(__DIR__)) . '/Unit']);
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Theory', 'Invalid/File/Path');
 
-        $autoloader->load(TestClass::class);
-
-        $this->assertTrue(class_exists(TestClass::class, false));
+        $this->assertFalse($autoloader->load(A::class));
+        $this->assertFalse(class_exists(A::class, false));
     }
 
-    public function testUndefinedNamespace()
+    public function test_load_returns_false_when_namespace_not_found()
     {
-        $autoloader = new Autoloader([]);
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Invalid\\Namespace', __DIR__ . '/Fixture');
 
-        $this->assertFalse($autoloader->load(TestClass::class)); 
+        $this->assertFalse($autoloader->load(A::class));
+        $this->assertFalse(class_exists(A::class, false));
     }
 
-    public function testMissingFile()
+    public function test_register_autoloader()
     {
-        $autoloader = new Autoloader(['Test' => 'path/that/does/not/exist']);
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Theory', __DIR__ . '/Fixture');
+        $autoloader->register();
 
-        $this->assertFalse($autoloader->load(TestClass::class)); 
+        $this->assertTrue(class_exists(A::class));
     }
 
-    public function testNormalizeNamespaceSeparators()
+    public function test_prioritize_longer_namespace()
     {
-        $autoloader = new Autoloader([
-            '\\Test\\Unit\\' => dirname(dirname(__DIR__)) . '/Unit'
-        ]);
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Theory', 'Should/Not/Be/Used');
+        $autoloader->addNamespace('Theory\\Tests', __DIR__ . '/Fixture');
+        $autoloader->register();
 
-        $autoloader->load(TestClass::class);
-
-        $this->assertTrue(class_exists(TestClass::class, false));
+        $this->assertTrue(class_exists(LongerNamespace::class));
     }
 
-    public function testRemoveTrailingDirectorySeparators()
+    public function test_load_class_with_forward_slash_separators()
     {
-        $autoloader = new Autoloader([
-            'Test' => dirname(dirname(__DIR__)) . '/'
-        ]);
-
-        $autoloader->load(TestClass::class);
-
-        $this->assertTrue(class_exists(TestClass::class, false));
+        $autoloader = new Autoloader();
+        $autoloader->addNamespace('Theory/Tests', __DIR__ . '/Fixture');
+        $autoloader->register();
+        
+        $this->assertTrue(class_exists(LongerNamespace::class));
     }
 }

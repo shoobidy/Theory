@@ -1,0 +1,16 @@
+<phpunit bootstrap="bootstrap.php" stderr="true">
+    <php>
+        <const name="ROOT" value="C:\theory"/>
+    </php>
+    <testsuites>
+        <testsuite name="autoload">
+            <directory>Unit/Autoload</directory>
+        </testsuite>
+        <testsuite name="di">
+            <directory>Unit/Di</directory>
+        </testsuite>
+        <testsuite name="http">
+            <directory>Unit/Http</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
