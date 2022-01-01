@@ -7,66 +7,76 @@
  */
 class Autoloader
 {
-    private $directories = [];
+    /**
+     * An array of ['namespace' => 'directory'] pairs
+     */
+    private $map = [];
 
     /**
-     * Directory separators at the end of filepaths aren't needed
+     * Add a namespace and directory pair.
+     * Both directory separators are allowed.
      * 
-     * Namespaces can be separated using '\\' or '/'
+     * @var string $namespace - Your\Namespace OR Your/Namespace
+     * @var string $directory - Your\Directory OR Your/Directory
      * 
-     * Example: (the 2 definitions below are equivalent)
-     *   ['Vendor\\Namespace' => 'base/directory/path']
-     *   ['Vendor/Namespace' => 'base/directory/path']
-     * 
-     * @param array $directories - ['Namespace' => 'base/directory/path']
+     * @return self
      */
-    public function __construct(array $directories)
+    public function addNamespace(string $namespace, string $directory)
     {
-        $this->normalize($directories);
-    }
+        $this->map[$this->normalize($namespace)] = $this->normalize($directory);
 
-    public function register()
-    {
-        spl_autoload_register([$this, 'load']);
+        return $this;
     }
 
     /**
-     * Tries to include the requested class file
+     * Try to include a class file using it's qualified name.
+     * A qualified name example: My\Namespace\Classname
      * 
-     * @param string $namespace - fully qualified namespace
-     * 
-     * @return bool
+     * @var    string - qualified class name 
+     * @return bool   - true if class file was included, false if not
      */
-    public function load($namespace)
+    public function load(string $classname)
     {
-        $namespacePath = str_replace('\\', '/', $namespace);
-        $namespaceCopy = $namespacePath;
+        $parts = explode('/', $this->normalize($classname));
+        $class = array_pop($parts);
 
-        while($offset = strrpos($namespaceCopy, '/')) {
-            $id = substr($namespaceCopy, 0, $offset);
+        while(!empty($parts)){
+            $id = implode('/', $parts);
 
-            if (!isset($this->directories[$id])) {
-                $namespaceCopy = $id;
+            if(!isset($this->map[$id])){
+                $class = array_pop($parts) . '/' . $class;
                 continue;
             }
 
-            $file = $this->directories[$id] . substr($namespacePath, $offset) . '.php';
+            $file = $this->map[$id] . '/' . $class . '.php';
 
-            if (!file_exists($file)) return false;
+            if(!file_exists($file)) break;
 
             include $file;
-            return true;      
+            
+            return true;
         }
 
         return false;
     }
 
-    private function normalize($directories)
+    /**
+     * Add this autoloader to the spl autoloader queue
+     * 
+     * @return self
+     */
+    public function register()
     {
-        foreach ($directories as $namespace => $directory) {
-            $id = trim(str_replace('\\', '/', $namespace), '/');
+        spl_autoload_register([$this, 'load']);
 
-            $this->directories[$id] = rtrim($directory, '/');
-        }
+        return $this;
+    }
+
+    /**
+     * Change all backslashes to forward slashes and remove trailing slashes
+     */
+    private function normalize(string $string)
+    {
+        return rtrim(str_replace('\\', '/', $string), '/');
     }
 }
