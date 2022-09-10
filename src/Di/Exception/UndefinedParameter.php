@@ -1,9 +1,9 @@
-<?php namespace Theory\Di;
+<?php namespace Theory\Di\Exception;
 
 use Theory\TheoryException;
 use ReflectionParameter;
 
-class UndefinedParameterException extends TheoryException
+class UndefinedParameter extends TheoryException
 {
     private $parameter;
 

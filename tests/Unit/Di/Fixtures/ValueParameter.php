@@ -2,10 +2,10 @@
 
 class ValueParameter
 {
-    public $property1;
+    public $value;
 
-    public function __construct($param1)
+    public function __construct($value)
     {
-        $this->property1 = $param1;
+        $this->value = $value;
     }
 }

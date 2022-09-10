@@ -1,17 +1,7 @@
 <?php namespace Theory\Test;
 
 use PHPUnit\Framework\TestCase;
-use Theory\Di\{
-    Container,
-    UndefinedParameterException,
-    ShareException
-};
-use Theory\Di\Definition\{
-    ObjectDefinition,
-    ShareDefinition,
-    ValueDefinition,
-    ClosureDefinition
-};
+
 use Theory\Tests\Unit\Di\Fixtures\{
     NullObject,
     ObjectParameter,
@@ -20,8 +10,87 @@ use Theory\Tests\Unit\Di\Fixtures\{
     Recursive
 };
 
+use Theory\Di\Container;
+
+use Theory\Di\Definition\{
+    ObjectDefinition,
+    ShareDefinition,
+    ValueDefinition,
+    ClosureDefinition
+};
+use Theory\Di\Exception\{
+    UndefinedParameter,
+    ClassNotShared,
+    NotClosure
+};
+
 class ContainerTest extends TestCase
 {
+    public function test_defined_object_throws_undefined_parameter()
+    {
+        $this->expectException(UndefinedParameter::class);
+
+        $class = ValueParameter::class;
+
+        $definition = new ObjectDefinition($class);
+
+        $container = new Container([$class => $definition]);
+        $actual = $container->get($class);
+    }
+    
+    public function test_resolve_default_parameter()
+    {
+        $class = DefaultParameter::class;
+
+        $definition = new ObjectDefinition($class);
+
+        $container = new Container([$class => $definition]);
+
+        $expected = new $class();
+        $actual = $container->get($class);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function test_resolve_defined_parameter()
+    {
+        $class = ValueParameter::class;
+
+        $definition = new ObjectDefinition($class);
+        $definition->addParameterDefinition('value', new ValueDefinition('test'));
+
+        $container = new Container([$class => $definition]);
+
+        $expected = new $class('test');
+        $actual = $container->get($class);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
+     * Container::get
+     * Container::define
+     * -- ObjectDefinition::resolve
+     * -- ObjectDefinition::resolveParameters
+     * -- ObjectDefinition::resolveParameter
+     * -- -- Container::get($parameter)
+     * 
+     * return $object($parameter);
+     */
+    public function test_auto_resolve_parameter_from_defined_object()
+    {
+        $definition = new ObjectDefinition(ObjectParameter::class);
+
+        $container = new Container([
+            ObjectParameter::class => $definition
+        ]);
+
+        $expected = new ObjectParameter(new NullObject());
+        $actual = $container->get(ObjectParameter::class);
+
+        $this->assertEquals($expected, $actual);
+    }
+
     public function test_auto_resolve_object_parameter()
     {
         $container = new Container();
@@ -34,7 +103,7 @@ class ContainerTest extends TestCase
 
     public function test_throw_undefined_parameter_exception()
     {
-        $this->expectException(UndefinedParameterException::class);
+        $this->expectException(UndefinedParameter::class);
 
         $container = new Container();
         $container->get(ValueParameter::class);
@@ -83,7 +152,7 @@ class ContainerTest extends TestCase
 
     public function test_throw_share_exception()
     {
-        $this->expectException(ShareException::class);
+        $this->expectException(ClassNotShared::class);
 
         $objParam = new ObjectDefinition(ObjectParameter::class);
         $objParam->addParameterDefinition('obj', new ShareDefinition(NullObject::class));
@@ -107,5 +176,16 @@ class ContainerTest extends TestCase
         $actual = $container->get('ClosureTest');
 
         $this->assertEquals($expected, $actual);
+    }
+
+    public function test_throw_not_closure()
+    {
+        $this->expectException(NotClosure::class);
+
+        $container = new Container([
+            'ClosureTest' => new ClosureDefinition(NullObject::class)
+        ]);
+
+        $container->get('ClosureTest');
     }
 }

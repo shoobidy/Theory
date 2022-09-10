@@ -9,6 +9,13 @@ use Theory\Di\Definition\{
     ValueDefinition
 };
 
+use Theory\Di\Exception\{
+    ClassNotShared,
+    UndefinedParameter
+};
+
+use App\Model\Service\FilterService;
+
 class Container
 {
     private $share = [];
@@ -36,7 +43,7 @@ class Container
 
     public function getSharedObject($id)
     {
-        if(!isset($this->share[$id])) throw new ShareException($id);
+        if(!isset($this->share[$id])) throw new ClassNotShared($id);
 
         return $this->share[$id];
     }
@@ -54,12 +61,12 @@ class Container
 
         $reflection = new ReflectionClass($id);
 
-        //if(!$reflection->isInstantiable()){}
-
         $constructor = $reflection->getConstructor();
+
         if($constructor === null) return $definition;
 
         $parameters = $constructor->getParameters();
+
         if(empty($parameters)) return $definition;
 
         foreach($parameters as $parameter){
@@ -75,15 +82,14 @@ class Container
     private function reflectParameterDefinition($parameter)
     {
         $type = $parameter->getType();
-
-        // if parameter has no type or isnt a ReflectionNamedType or is built in 
+ 
         if($type === null || !($type instanceof ReflectionNamedType) || $type->isBuiltIn()){
 
             if($parameter->isDefaultValueAvailable()){
                 return new ValueDefinition($parameter->getDefaultValue());
             }
 
-            throw new UndefinedParameterException($parameter);
+            throw new UndefinedParameter($parameter);
         }
 
         return $this->define($type->getName()); 

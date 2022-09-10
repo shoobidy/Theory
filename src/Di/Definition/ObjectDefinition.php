@@ -1,6 +1,8 @@
 <?php namespace Theory\Di\Definition;
 
+use Theory\Di\Exception\UndefinedParameter;
 use ReflectionClass;
+use ReflectionNamedType;
 
 class ObjectDefinition extends AbstractDefinition
 {
@@ -70,15 +72,14 @@ class ObjectDefinition extends AbstractDefinition
 
         $type = $parameter->getType();
 
-        // if parameter has no type or isnt a ReflectionNamedType or is built in
-        // then it can only be resolved if there's a default value
-        if($type === null || !($type instanceof ReflectionNamedType) || $type->isBuiltIn()){
-
+        // parameter can only be resolved if there's a default value
+        if($type === null || !($type instanceof ReflectionNamedType) || $type->isBuiltIn())
+        {
             if($parameter->isDefaultValueAvailable()) return $parameter->getDefaultValue();
 
-            throw new UndefinedParameterException($parameter);
+            throw new UndefinedParameter($parameter);
         }
 
-        return $this->get($type->getName());
+        return $this->container->get($type->getName());
     }
 }
